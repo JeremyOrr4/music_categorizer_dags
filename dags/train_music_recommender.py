@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.utils.dates import days_ago
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
+from kubernetes.client import V1Volume, V1PersistentVolumeClaimVolumeSource, V1VolumeMount
 
 # DAG default args
 default_args = {
@@ -18,15 +19,18 @@ with DAG(
     catchup=False,
 ) as dag:
 
-    volume_mount = {
-        "name": "music-categorizer-pvc",
-        "mountPath": "/music-categorizer-data",
-    }
+    volume = V1Volume(
+        name="music-categorizer-pvc",
+        persistent_volume_claim=V1PersistentVolumeClaimVolumeSource(
+            claim_name="music-categorizer-pvc"
+        ),
+    )
 
-    volume = {
-        "name": "music-categorizer-pvc",
-        "persistentVolumeClaim": {"claimName": "music-categorizer-pvc"},
-    }
+    volume_mount = V1VolumeMount(
+        name="music-categorizer-pvc",
+        mount_path="/music-categorizer-data",
+    )
+
 
     pcm_encoder = KubernetesPodOperator(
         task_id="pcm_encoder",
